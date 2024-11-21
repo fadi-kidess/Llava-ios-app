@@ -18,9 +18,9 @@ struct InferenceScreenView: View {
         self._appstate = StateObject(wrappedValue: appstate)
         self.multiLineText = multiLineText
         self.cameraModel = cameraModel
-             
-         }
-  
+        
+    }
+    
     var body: some View {
         VStack {
             if (self.cameraModel.currentImageData != nil) {
@@ -36,23 +36,23 @@ struct InferenceScreenView: View {
                                 }
                         }
                     }
-//Z
+                //Z
             } else {
                 CameraView(model: self.cameraModel)
             }
-//Z                .overlay {
-//Z                    ScrollView(.vertical, showsIndicators: true) {
-//Z                        Text(appstate.messageLog)
-//Z                            .font(.system(size: 12))
-//Z                            .frame(maxWidth: .infinity, alignment: .leading)
-//Z                            .padding()
-//Z                            .onTapGesture {
-//Z                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-//Z                            }.background {
-//Z                                Color.gray.opacity(0.2)
-//Z                            }
-//Z                    }
-//Z                }
+            //Z                .overlay {
+            //Z                    ScrollView(.vertical, showsIndicators: true) {
+            //Z                        Text(appstate.messageLog)
+            //Z                            .font(.system(size: 12))
+            //Z                            .frame(maxWidth: .infinity, alignment: .leading)
+            //Z                            .padding()
+            //Z                            .onTapGesture {
+            //Z                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            //Z                            }.background {
+            //Z                                Color.gray.opacity(0.2)
+            //Z                            }
+            //Z                    }
+            //Z                }
             VStack {
                 
                 HStack {
@@ -66,7 +66,7 @@ struct InferenceScreenView: View {
                 .padding()
                 .onAppear {
                     Task {
-                       await appstate.preInit()
+                        await appstate.preInit()
                     }
                 }
             }
@@ -75,14 +75,11 @@ struct InferenceScreenView: View {
     
     func sendText() {
         Task {
-            
-             
-        
             await appstate.complete(newtext: multiLineText, img: cameraModel.currentImageData)
             multiLineText = ""
         }
     }
-
+    
     func clear() {
         Task {
             await appstate.clear()
@@ -94,10 +91,9 @@ struct InferenceScreenView: View {
     func startTimer() {
         
         timer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { _ in
-                clear()
-                sendText()
-            }
+            sendText()
         }
+    }
     
 }
 

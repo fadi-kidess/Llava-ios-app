@@ -64,10 +64,11 @@ class AppState: ObservableObject {
     }
     var X = 0.0
     var Y = 1.0
-    var action = "Walk straight"
+    var action = "turn right"
+//    ["walk straight", "turn slightly right", "turn right", "turn around", "turn left", "turn slightly left"]
     
     var textToSend = ""
-    var prevAction = ["None","None","None","None"]
+    var prevMessages = ["None","None","None","None"]
     
     
     public static func previewState() -> AppState {
@@ -128,14 +129,33 @@ class AppState: ObservableObject {
         await llamaContext.completion_system_init()
     }
     
+    func make_prompt() -> String {
+        var text = "Guide a blind person. action: \(action) history: "
+        // Loop through the last 4 messages and construct the history
+        for i in (prevMessages.count - 4)..<prevMessages.count { // Use a half-open range
+            let secondsAgo = "\(prevMessages.count - i)s ago"
+            print("Index: \(i), Offset: \(prevMessages.count - i)")
+            let message = prevMessages[i]
+            text += "\(secondsAgo): \(message), "
+        }
+        text = String(text.dropLast(2))
+        return text
+    }
+    
     func complete(newtext: String, img: Data?) async {
+        clearMsg()
         ensureContext()
         guard let llamaContext else {
             return
         }
-        var text = "Guide a blind person. goal=[\(X), \(Y)], action: \(prevAction[3]) history: 4s ago:  \(prevAction[0]), 3s ago:  \(prevAction[1]), 2s ago:  \(prevAction[2]), 1s ago:  \(prevAction[3])"
+        let text = make_prompt()
+        
+        appendMessage(result:text + "\n\n")
+
         let image: Data? = img
-        var bytes = image.map { d in
+        if img == nil { return }
+
+        let bytes = image.map { d in
             var byteArray = [UInt8](repeating: 0, count: d.count) // Create an array of the correct size
             d.copyBytes(to: &byteArray, count: d.count)
             return byteArray
@@ -145,25 +165,23 @@ class AppState: ObservableObject {
         await llamaContext.completion_init(text: text, imageBytes: bytes)
         let t_heat_end = DispatchTime.now().uptimeNanoseconds
         let t_heat = Double(t_heat_end - t_start) / NS_PER_S
-        //appendMessage(result: "\(text)")
+
         var outText = ""
+        appendMessage(result: "Prediction: ")
         while await llamaContext.n_cur < llamaContext.n_len {
             let result = await llamaContext.completion_loop()
             appendMessage(result: "\(result)")
-            if result == "</s>" {
-                break;
-            }
-            
-            outText = outText + result
+            if result == "</s>" { break }
+            outText += result
         }
+        
+        appendMessage(result: "\n\n")
         if(!outText.contains("None")){
             speak(outText)
+            appendMessage(result: "Speaking: \(outText)")
         }
-        for i in 0..<prevAction.count-1{
-            prevAction[i] = prevAction[i+1]
-            
-        }
-        prevAction[3] = outText
+
+        prevMessages.append(outText)
         let t_end = DispatchTime.now().uptimeNanoseconds
         let t_generation = Double(t_end - t_heat_end) / NS_PER_S
         let tokens_per_second = Double(await llamaContext.n_cur) / t_generation
@@ -179,15 +197,16 @@ class AppState: ObservableObject {
         )
     }
     func speak(_ text: String) {
-        if(text != "None"){
-            speechSynthesizer.stopSpeaking(at: .immediate)
-            let utterance = AVSpeechUtterance(string: text)
-            utterance.voice = AVSpeechSynthesisVoice(language: "en-US") // Set the voice language
-            utterance.rate = 0.6 // Adjust the speech rate (0.0 - 1.0, lower is slower)
-            utterance.pitchMultiplier = 1.0 // Adjust the pitch (default is 1.0)
-            
+        
+//        speechSynthesizer.stopSpeaking(at: .immediate)
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US") // Set the voice language
+        utterance.rate = 0.6 // Adjust the speech rate (0.0 - 1.0, lower is slower)
+        utterance.pitchMultiplier = 1.0 // Adjust the pitch (default is 1.0)
+        DispatchQueue.main.async { [self] in
             speechSynthesizer.speak(utterance) // Trigger speech
         }
+        
     }
     
     func clear() async {
@@ -196,6 +215,12 @@ class AppState: ObservableObject {
         }
         
         await llamaContext.clear()
+        DispatchQueue.main.async {
+            self.messageLog = ""
+        }
+    }
+    
+    func clearMsg() {
         DispatchQueue.main.async {
             self.messageLog = ""
         }
