@@ -64,8 +64,7 @@ class AppState: ObservableObject {
     }
     var X = 0.0
     var Y = 1.0
-    var action = "turn right"
-//    ["walk straight", "turn slightly right", "turn right", "turn around", "turn left", "turn slightly left"]
+    var actions = ["walk straight", "turn slightly right", "turn right", "turn around", "turn left", "turn slightly left"]
     
     var textToSend = ""
     var prevMessages = ["None","None","None","None"]
@@ -130,6 +129,7 @@ class AppState: ObservableObject {
     }
     
     func make_prompt() -> String {
+        let action = actions.randomElement() ?? "walk stright"
         var text = "Guide a blind person. action: \(action) history: "
         // Loop through the last 4 messages and construct the history
         for i in (prevMessages.count - 4)..<prevMessages.count { // Use a half-open range
