@@ -8,6 +8,10 @@
 import SwiftUI
 import AVFoundation
 
+let LLaMAURL = "https://drive.usercontent.google.com/download?id=1FUZZgDlKjFP6bsE3kWCXN2c6dP7LpAWh&export=download&authuser=0&confirm=t&uuid=4e9ca503-793d-4b7d-8714-e11556ddff73&at=AENtkXbE3ay5HR7N0PKWadW1nNIi%3A1731994151449"
+let projectorURL = "https://drive.usercontent.google.com/download?id=1QtRLoTx8OkKiB-d0p7-hDLeMmb2sVHu3&export=download&authuser=0&confirm=t&uuid=7b1a7b5b-9051-41ea-b5be-8b537be00426&at=AENtkXYwkLxgPU71RVe_D03jAF1u%3A1731388857063"
+let projectorURL_f16 = "https://drive.usercontent.google.com/download?id=1QtRLoTx8OkKiB-d0p7-hDLeMmb2sVHu3&export=download&authuser=0&confirm=t&uuid=183a0c76-fc8e-49a3-b332-01b09a25b290&at=AENtkXYJwxnHDwP3BUG3PYriqtb1%3A1731872135816"
+
 struct LlamaModel: Identifiable{
     var id = UUID()
     var name: String
@@ -19,7 +23,7 @@ struct response: Decodable {
     enum Category: String, Decodable {
         case swift, combine, debugging, xcode
     }
-
+    
     let reason: String
     let instruction: String
 }
@@ -35,7 +39,7 @@ class AppState: ObservableObject {
      */
     
     static var llavaModels = LlavaModelInfoList(models: [
-        LlavaModelInfo(modelName: "TinyLLaVa-prashanth", url: "https://drive.usercontent.google.com/download?id=1FUZZgDlKjFP6bsE3kWCXN2c6dP7LpAWh&export=download&authuser=0&confirm=t&uuid=4e9ca503-793d-4b7d-8714-e11556ddff73&at=AENtkXbE3ay5HR7N0PKWadW1nNIi%3A1731994151449", projectionUrl: "https://drive.usercontent.google.com/download?id=1QtRLoTx8OkKiB-d0p7-hDLeMmb2sVHu3&export=download&authuser=0&confirm=t&uuid=7b1a7b5b-9051-41ea-b5be-8b537be00426&at=AENtkXYwkLxgPU71RVe_D03jAF1u%3A1731388857063")
+        LlavaModelInfo(modelName: "TinyLLaVa-prashanth", url: LLaMAURL, projectionUrl: projectorURL)
     ])
     
     let NS_PER_S = 1_000_000_000.0
@@ -58,19 +62,19 @@ class AppState: ObservableObject {
     func setBaseModel(model: LlamaModel?) {
         selectedBaseModel = model
     }
-    var X = (0.0)
-    var Y = (1.0)
-        var action = "Walk straight"
-       
-       var textToSend = ""
-       var prevAction = ["Walk straight","Walk straight","Walk straight","Walk straight"]
+    var X = 0.0
+    var Y = 1.0
+    var action = "Walk straight"
+    
+    var textToSend = ""
+    var prevAction = ["None","None","None","None"]
     
     
     public static func previewState() -> AppState {
         let ret = AppState()
         ret.downloadedBaseModels = [
-            LlamaModel(name: "TinyLlama-1.1B Chat (Q8_0, 1.1 GiB)", status: "downloaded", filename: "tinyllama-1.1b-chat-v1.0.Q8_0.gguf", url: "https://drive.usercontent.google.com/download?id=1FUZZgDlKjFP6bsE3kWCXN2c6dP7LpAWh&export=download&authuser=0&confirm=t&uuid=4e9ca503-793d-4b7d-8714-e11556ddff73&at=AENtkXbE3ay5HR7N0PKWadW1nNIi%3A1731994151449"),
-            LlamaModel(name: "mmproj model f16 (for Images)", status: "downloaded", filename: "mmproj-model-f16.gguf", url: "https://drive.usercontent.google.com/download?id=1QtRLoTx8OkKiB-d0p7-hDLeMmb2sVHu3&export=download&authuser=0&confirm=t&uuid=183a0c76-fc8e-49a3-b332-01b09a25b290&at=AENtkXYJwxnHDwP3BUG3PYriqtb1%3A1731872135816")
+            LlamaModel(name: "TinyLlama-1.1B Chat (Q8_0, 1.1 GiB)", status: "downloaded", filename: "tinyllama-1.1b-chat-v1.0.Q8_0.gguf", url: LLaMAURL),
+            LlamaModel(name: "mmproj model f16 (for Images)", status: "downloaded", filename: "mmproj-model-f16.gguf", url: projectorURL_f16)
         ]
         return ret
     }
@@ -81,7 +85,7 @@ class AppState: ObservableObject {
         }
     }
     
-    var TINY_SYS_PROMPT: String = "<|system|>\nA chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.</s>\n<|user|>\n"
+    var TINY_SYS_PROMPT: String = "<|system|>\nA You are providing guidance instructions to a blind person.</s>\n<|user|>\n"
     
     var TINY_USER_POSTFIX: String = "</s>\n<|assistant|>\n"
     
@@ -123,14 +127,12 @@ class AppState: ObservableObject {
         }
         await llamaContext.completion_system_init()
     }
-   
+    
     func complete(newtext: String, img: Data?) async {
         ensureContext()
         guard let llamaContext else {
             return
         }
-        //var text = "You are guiding a blind person. The blind person needs to approach the goal: [x,y]={\(X),\(Y)}, which the action: {\(action)}, needs to be taken. You have conveyed the following instructions in the past the information of history instructions:\n{\(prevAction[0]),\(prevAction[1]),\(prevAction[2]),\(prevAction[3]),\(prevAction[4]),\(prevAction[5]),\(prevAction[6]),\(prevAction[7]),\(prevAction[8]),\(prevAction[9]),\(prevAction[10]),\(prevAction[11]),\(prevAction[12]),\(prevAction[13]),\(prevAction[14])} Generate the instruction for the last frame. You will need to instruct user once in a while, notify of turns they need to make or obstacles to avoid, and keep the instruction in junctions minimal for safety. For example, you should not instruct the user for two consecutive frames to avoid frequent instruction. Only return the instruction to convey. Return \"None\" for remaining silent in the last frame."
-        
         var text = "Guide a blind person. goal=[\(X), \(Y)], action: \(prevAction[3]) history: 4s ago:  \(prevAction[0]), 3s ago:  \(prevAction[1]), 2s ago:  \(prevAction[2]), 1s ago:  \(prevAction[3])"
         let image: Data? = img
         var bytes = image.map { d in
@@ -174,7 +176,7 @@ class AppState: ObservableObject {
             Heat up took \(t_heat)s
             Generated \(tokens_per_second) t/s\n
             """
-                      )
+        )
     }
     func speak(_ text: String) {
         if(text != "None"){
@@ -186,19 +188,19 @@ class AppState: ObservableObject {
             
             speechSynthesizer.speak(utterance) // Trigger speech
         }
-        }
+    }
     
     func clear() async {
         guard let llamaContext else {
             return
         }
-
+        
         await llamaContext.clear()
         DispatchQueue.main.async {
             self.messageLog = ""
         }
     }
-
+    
     public func loadModelsFromDisk() {
         do {
             let documentsURL = getDocumentsDirectory()
@@ -207,7 +209,7 @@ class AppState: ObservableObject {
                 let modelName = modelURL.deletingPathExtension().lastPathComponent
                 downloadedBaseModels.append(LlamaModel(name: modelName, status: "downloaded", filename: modelURL.path(), url: "-"))
             }
-
+            
             state = .Started
         } catch {
             print("Error loading models from disk: \(error)")
@@ -234,8 +236,8 @@ struct ContentView: View {
                 } else if appstate.state == .Started {
                     if (appstate.downloadedBaseModels.count <= 1) {
                         Text("downloaded models: \(appstate.downloadedBaseModels.count)")
-                        DownloadButton(appState: appstate, modelName: "TinyLlava-Masaki", modelUrl: "https://drive.usercontent.google.com/download?id=1FUZZgDlKjFP6bsE3kWCXN2c6dP7LpAWh&export=download&authuser=0&confirm=t&uuid=4e9ca503-793d-4b7d-8714-e11556ddff73&at=AENtkXbE3ay5HR7N0PKWadW1nNIi%3A1731994151449", filename: "tinyllava-1.1B.Q4_k_m.gguf")
-                        DownloadButton(appState: appstate, modelName: "mmproj model tinyllava f16 (for Images)", modelUrl: "https://drive.usercontent.google.com/download?id=1QtRLoTx8OkKiB-d0p7-hDLeMmb2sVHu3&export=download&authuser=0&confirm=t&uuid=183a0c76-fc8e-49a3-b332-01b09a25b290&at=AENtkXYJwxnHDwP3BUG3PYriqtb1%3A1731872135816", filename: "mmproj-tinymodel-f16.gguf")
+                        DownloadButton(appState: appstate, modelName: "TinyLlava-Masaki", modelUrl: LLaMAURL, filename: "tinyllava-1.1B.Q4_k_m.gguf")
+                        DownloadButton(appState: appstate, modelName: "mmproj model tinyllava f16 (for Images)", modelUrl: projectorURL_f16, filename: "mmproj-tinymodel-f16.gguf")
                     } else {
                         InferenceScreenView(appstate: appstate, cameraModel: cameraModel)
                     }
